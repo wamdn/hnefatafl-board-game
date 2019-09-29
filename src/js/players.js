@@ -1,13 +1,20 @@
+
 class Player {
    constructor () {
       this.piece = []
+      this.matrix = [
+         [0,0,0,1,1,1,0,0,0],
+         [0,0,0,0,1,0,0,0,0],
+         [0,0,0,0,2,0,0,0,0],
+         [1,0,0,0,2,0,0,0,1],
+         [1,1,2,2,3,2,2,1,1],
+         [1,0,0,0,2,0,0,0,1],
+         [0,0,0,0,2,0,0,0,0],
+         [0,0,0,0,1,0,0,0,0],
+         [0,0,0,1,1,1,0,0,0]
+      ]
    }
-   genPiece (ctx, nbr) {
-      for (let i = 0; i < nbr; i++) {
-         this.piece.push( new Solder() )
-      }
-   }
-   static getMatrix (attacker, defender) {
+   static getNewMatrix (attacker, defender) {
 
    }
 }
@@ -17,12 +24,35 @@ class Attacker extends Player {
       super()
       this.color = 'rgb(45,45,45)';
    }
+   genPiece () {
+      const len = this.matrix.length;
+      for (let y = 0; y < len; y++) {
+         for (let x = 0; x < len; x++) {
+            if (this.matrix[y][x] === 1) {
+               this.piece.push( new Solder(x, y, 60) )
+            }
+         }
+      }
+   }
 }
 
 class Defender extends Player {
    constructor () {
       super()
       this.color = 'rgb(255,249,149)';
+   }
+   genPiece () {
+      const len = this.matrix.length;
+      for (let y = 0; y < len; y++) {
+         for (let x = 0; x < len; x++) {
+            if (this.matrix[y][x] === 2) {
+               this.piece.push( new Solder(x, y, 60) )
+            }
+            else if (this.matrix[y][x] === 3) {
+               this.piece.push( new King(x, y, 60) )
+            }
+         }
+      }
    }
 }
 
@@ -64,28 +94,38 @@ export default () => {
 
    const canvas = document.getElementById('players');
    const ctx = canvas.getContext('2d');
-   const matrix = null;
 
    // ctx.beginPath();
    // ctx.fillStyle = 'rgb(55,55,55)';
    // ctx.arc(90, 30, 25, 0, 2 * Math.PI)
    // ctx.fill();
 
-   const atk = new Solder (3, 0, 60)
-   ctx.fillStyle = 'rgb(45,45,45)';
-   atk.drow(ctx)
+   // const atk = new Solder (3, 0, 60)
+   // ctx.fillStyle = 'rgb(45,45,45)';
+   // atk.drow(ctx)
 
 
-   const def = new Solder (2, 4, 60)
-   ctx.fillStyle = 'rgb(255,240,110)';
-   def.drow(ctx)
+   // const def = new Solder (2, 4, 60)
+   // ctx.fillStyle = 'rgb(255,240,110)';
+   // def.drow(ctx)
 
-   const king = new King (4, 4, 60)
-   ctx.fillStyle = 'rgb(255,240,110)';
-   king.drow(ctx)
+   // const king = new King (4, 4, 60)
+   // ctx.fillStyle = 'rgb(255,240,110)';
+   // king.drow(ctx)
 
+   const attacker = new Attacker;
+   attacker.genPiece(ctx);
+   ctx.fillStyle = attacker.color;
+   attacker.piece.forEach(p => {
+      p.drow(ctx)
+   })
 
-   
+   const defender = new Defender;
+   defender.genPiece(ctx);
+   ctx.fillStyle = defender.color;
+   defender.piece.forEach(p => {
+      p.drow(ctx)
+   })
 
 }
 
