@@ -1,0 +1,15 @@
+.game {
+  position: relative;
+}
+
+#gameBoard {
+  border: 1px solid #000;
+}
+
+#players {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 1px solid red;
+}
+/*# sourceMappingURL=style.css.map */
