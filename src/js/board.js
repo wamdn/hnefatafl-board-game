@@ -22,15 +22,18 @@ export default (gameSize, length) => {
 
       for (let x = 0; x < boardLength; x++) {
          if (colorSwitch) {
-            ctx.fillStyle = 'rgb(241, 241, 241)';
+            ctx.fillStyle = 'rgb(241,241,241)'
          }
          else {
-            ctx.fillStyle = 'rgb(222, 222, 222)';
+            ctx.fillStyle = 'rgb(222,222,222)'
          }
 
-         if (( x == 0 || x == boardLength - 1 ) && ( y == 0 || y == boardLength - 1 ) || ( x == boardCentre && y == boardCentre )) {
-            ctx.fillStyle = 'rgb(100, 200, 100)';   
-         } 
+         if (( x == 0 || x == boardLength - 1 ) && ( y == 0 || y == boardLength - 1 )) {
+            ctx.fillStyle = 'rgb(100,200,100)' 
+         }
+         else if (x == boardCentre && y == boardCentre) {
+            ctx.fillStyle = 'rgb(115,158,147)'
+         }
 
          ctx.fillRect(posX, posY, block, block);
          posX += block;
@@ -43,7 +46,3 @@ export default (gameSize, length) => {
 
 }
 
-// function gameLoop () {
-
-//    requestAnimationFrame(gameLoop);
-// }

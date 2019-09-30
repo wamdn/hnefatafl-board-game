@@ -97,15 +97,73 @@
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _board__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./board */ "./src/js/board.js");
 /* harmony import */ var _players__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./players */ "./src/js/players.js");
+/* harmony import */ var _rules__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./rules */ "./src/js/rules.js");
+/* harmony import */ var _rules__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_rules__WEBPACK_IMPORTED_MODULE_2__);
+
 
 
 
 const gameSize = 540;
 const boardLength = 9;
+const blockSize = gameSize / boardLength;
 
 Object(_board__WEBPACK_IMPORTED_MODULE_0__["default"])(gameSize, boardLength);
 
-Object(_players__WEBPACK_IMPORTED_MODULE_1__["default"])();
+// set piece
+const canvas = document.getElementById('players');
+const ctx = canvas.getContext('2d');
+
+const attacker = new _players__WEBPACK_IMPORTED_MODULE_1__["Attacker"];
+attacker.genPiece(blockSize);
+
+
+const defender = new _players__WEBPACK_IMPORTED_MODULE_1__["Defender"];
+defender.genPiece(blockSize);
+
+
+function drowAll () {
+   ctx.clearRect(0, 0, gameSize, gameSize);
+
+   ctx.fillStyle = attacker.color;
+   attacker.piece.forEach(p => {
+      p.drow(ctx)
+   })
+
+   ctx.fillStyle = defender.color;
+   defender.piece.forEach(p => {
+      p.drow(ctx)
+   })
+}
+
+drowAll ()
+
+// postion relative to canvas
+let selected = null;
+
+canvas.onclick = (e) => {
+   const offset = canvas.getBoundingClientRect();
+   const x = Math.floor((e.x - offset.left) / blockSize)
+   const y = Math.floor((e.y - offset.top) / blockSize) 
+
+   function getPiece (player) {
+      player.piece.forEach(p => {        
+         if (p.posX == x && p.posY == y) {
+            selected = p
+            selected.selection(ctx)
+         }
+      })
+   }
+
+   function movePiece (x, y) {
+      selected.newPos(x, y) 
+      drowAll()
+      selected = null;
+   }
+
+   if (!selected) getPiece(attacker)
+   else movePiece(x, y)
+   
+}
 
 
 
@@ -147,15 +205,18 @@ __webpack_require__.r(__webpack_exports__);
 
       for (let x = 0; x < boardLength; x++) {
          if (colorSwitch) {
-            ctx.fillStyle = 'rgb(241, 241, 241)';
+            ctx.fillStyle = 'rgb(241,241,241)'
          }
          else {
-            ctx.fillStyle = 'rgb(222, 222, 222)';
+            ctx.fillStyle = 'rgb(222,222,222)'
          }
 
-         if (( x == 0 || x == boardLength - 1 ) && ( y == 0 || y == boardLength - 1 ) || ( x == boardCentre && y == boardCentre )) {
-            ctx.fillStyle = 'rgb(100, 200, 100)';   
-         } 
+         if (( x == 0 || x == boardLength - 1 ) && ( y == 0 || y == boardLength - 1 )) {
+            ctx.fillStyle = 'rgb(100,200,100)' 
+         }
+         else if (x == boardCentre && y == boardCentre) {
+            ctx.fillStyle = 'rgb(115,158,147)'
+         }
 
          ctx.fillRect(posX, posY, block, block);
          posX += block;
@@ -168,10 +229,6 @@ __webpack_require__.r(__webpack_exports__);
 
 });
 
-// function gameLoop () {
-
-//    requestAnimationFrame(gameLoop);
-// }
 
 
 /***/ }),
@@ -180,11 +237,13 @@ __webpack_require__.r(__webpack_exports__);
 /*!***************************!*\
   !*** ./src/js/players.js ***!
   \***************************/
-/*! exports provided: default */
+/*! exports provided: Attacker, Defender */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Attacker", function() { return Attacker; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Defender", function() { return Defender; });
 
 class Player {
    constructor () {
@@ -209,14 +268,14 @@ class Player {
 class Attacker extends Player {
    constructor () {
       super()
-      this.color = 'rgb(45,45,45)';
+      this.color = 'rgb(55,55,55)';
    }
-   genPiece () {
+   genPiece (blockSize) {
       const len = this.matrix.length;
       for (let y = 0; y < len; y++) {
          for (let x = 0; x < len; x++) {
             if (this.matrix[y][x] === 1) {
-               this.piece.push( new Solder(x, y, 60) )
+               this.piece.push( new Solder(x, y, blockSize) )
             }
          }
       }
@@ -226,14 +285,14 @@ class Attacker extends Player {
 class Defender extends Player {
    constructor () {
       super()
-      this.color = 'rgb(255,249,149)';
+      this.color = 'rgb(245,245,15)';
    }
-   genPiece () {
+   genPiece (blockSize) {
       const len = this.matrix.length;
       for (let y = 0; y < len; y++) {
          for (let x = 0; x < len; x++) {
             if (this.matrix[y][x] === 2) {
-               this.piece.push( new Solder(x, y, 60) )
+               this.piece.push( new Solder(x, y, blockSize) )
             }
             else if (this.matrix[y][x] === 3) {
                this.piece.push( new King(x, y, 60) )
@@ -243,28 +302,59 @@ class Defender extends Player {
    }
 }
 
+// Piece
 class Solder {
    constructor (posX, posY, size) {
-      this.posX = (posX * size)+ (size / 2);
-      this.posY = (posY * size) + (size / 2);
-      this.size = (size / 2) - 5
+      this.posX = posX;
+      this.posY = posY;
+      this.pxlPosX = null;
+      this.pxlPosY = null;
+      this.size = size;
+      this.radius = (size / 2) - 5
       this.isKing = false;
    }
-   drow (ctx) {
+   newPos (newPosX, newPosY) {
+      this.posX = newPosX
+      this.posY = newPosY
+   }
+   selection (ctx) {
+      const x = this.posX * this.size
+      const y = this.posY * this.size
+      const lineSize = this.radius - 8
       ctx.beginPath();
-      // ctx.fillStyle = 'rgb(50,50,50)';
-      ctx.arc(this.posX, this.posY, this.size, 0, 2 * Math.PI)
+      ctx.moveTo(x, y + lineSize)
+      ctx.lineTo(x, y)
+      ctx.lineTo(x + lineSize, y)
+      ctx.moveTo(x + this.size - lineSize, y)
+      ctx.lineTo(x + this.size, y)
+      ctx.lineTo(x + this.size, y + lineSize)
+      ctx.moveTo(x + this.size, y + this.size - lineSize)
+      ctx.lineTo(x + this.size, y + this.size)
+      ctx.lineTo(x + this.size - lineSize, y + this.size)
+      ctx.moveTo(x + lineSize, y + this.size)
+      ctx.lineTo(x, y + this.size)
+      ctx.lineTo(x, y + this.size - lineSize)
+      ctx.strokeStyle = 'rgb(107,182,250)';
+      ctx.lineWidth = 8
+      ctx.stroke()
+   }
+   drow (ctx) {
+      this.pxlPosX = (this.posX * this.size) + (this.size / 2);
+      this.pxlPosY = (this.posY * this.size) + (this.size / 2);
+
+      ctx.beginPath();
+      ctx.arc(this.pxlPosX, this.pxlPosY, this.radius, 0, 2 * Math.PI)
       ctx.fill();
 
       if (this.isKing) {
          ctx.lineWidth = 12;
 
          ctx.beginPath();
+         ctx.moveTo(this.pxlPosX, this.pxlPosY - this.radius + 8);
+         ctx.lineTo(this.pxlPosX, this.pxlPosY + this.radius - 8);
+         ctx.moveTo(this.pxlPosX - this.radius + 8, this.pxlPosY);
+         ctx.lineTo(this.pxlPosX + this.radius - 8, this.pxlPosY);
          ctx.strokeStyle = 'rgb(169,159,0)';
-         ctx.moveTo(this.posX, this.posY - this.size + 8);
-         ctx.lineTo(this.posX, this.posY + this.size - 8);
-         ctx.moveTo(this.posX - this.size + 8, this.posY);
-         ctx.lineTo(this.posX + this.size - 8, this.posY);
          ctx.stroke();
       }
    }
@@ -277,46 +367,19 @@ class King extends Solder {
    }
 }
 
-/* harmony default export */ __webpack_exports__["default"] = (() => {
-
-   const canvas = document.getElementById('players');
-   const ctx = canvas.getContext('2d');
-
-   // ctx.beginPath();
-   // ctx.fillStyle = 'rgb(55,55,55)';
-   // ctx.arc(90, 30, 25, 0, 2 * Math.PI)
-   // ctx.fill();
-
-   // const atk = new Solder (3, 0, 60)
-   // ctx.fillStyle = 'rgb(45,45,45)';
-   // atk.drow(ctx)
 
 
-   // const def = new Solder (2, 4, 60)
-   // ctx.fillStyle = 'rgb(255,240,110)';
-   // def.drow(ctx)
-
-   // const king = new King (4, 4, 60)
-   // ctx.fillStyle = 'rgb(255,240,110)';
-   // king.drow(ctx)
-
-   const attacker = new Attacker;
-   attacker.genPiece(ctx);
-   ctx.fillStyle = attacker.color;
-   attacker.piece.forEach(p => {
-      p.drow(ctx)
-   })
-
-   const defender = new Defender;
-   defender.genPiece(ctx);
-   ctx.fillStyle = defender.color;
-   defender.piece.forEach(p => {
-      p.drow(ctx)
-   })
-
-});
 
 
+
+/***/ }),
+
+/***/ "./src/js/rules.js":
+/*!*************************!*\
+  !*** ./src/js/rules.js ***!
+  \*************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
 
 
 
